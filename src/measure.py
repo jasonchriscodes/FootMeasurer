@@ -1,6 +1,7 @@
 # Import dependencies
 import numpy as np
 import cv2
+from  math import sqrt
 
 class FootSizeAnalyzer:
     def __init__(self, paper_hsv_min: tuple, paper_hsv_max: tuple, paper_height=297, paper_width=210):
@@ -23,6 +24,11 @@ class FootSizeAnalyzer:
 
         contours = sorted(contours, key=cv2.contourArea, reverse=True)
 
+        for point in cnt:
+            x = point[0]
+            y = point[1]
+
+            r = 
         cv2.drawContours(image_result, contours, 0, (0,255,0), 3)
 
         return image_result, foot_height, foot_width
