@@ -1,3 +1,7 @@
+colorzero==2.0
+gpiozero==1.6.2
 numpy==1.21.6
 opencv-python==4.7.0.68
+pigpio==1.78
 pkg-resources==0.0.0
+RPi.GPIO==0.7.1

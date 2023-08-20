@@ -2,6 +2,77 @@
 import numpy as np
 import cv2
 from math import sqrt
+from threading import Thread
+from constant import *
+class ShoeSize:
+    def __init__(self, us: float, cm_height: float):
+        self.__us = us
+        self.__cm_height = cm_height
+
+    def get_dif(self, value):
+        dif = value - self.__cm_height
+        return dif
+    
+    def get_us_size(self):
+        return self.__us
+        
+SHOE_SIZE_MALE = [
+    ShoeSize(3, 21.6),
+    ShoeSize(3.5, 22.0),
+    ShoeSize(4, 22.4),
+    ShoeSize(4.5, 22.9),
+    ShoeSize(5, 23.3),
+    ShoeSize(5.5, 23.7),
+    ShoeSize(6, 24.1),
+    ShoeSize(6.5, 24.6),
+    ShoeSize(7, 25.0),
+    ShoeSize(7.5, 25.4),
+    ShoeSize(8, 25.8),
+    ShoeSize(8.5, 26.2),
+    ShoeSize(9, 26.7),
+    ShoeSize(9.5, 27.1),
+    ShoeSize(10, 27.5),
+    ShoeSize(10.5, 27.9),
+    ShoeSize(11, 28.4),
+    ShoeSize(11.5, 28.8),
+    ShoeSize(12, 29.2),
+    ShoeSize(12.5, 29.6),
+    ShoeSize(13, 30.1),
+    ShoeSize(13.5, 30.5),
+    ShoeSize(14, 30.9),
+    ShoeSize(14.5, 31.3),
+    ShoeSize(15, 31.8),
+    ShoeSize(15.5, 32.2),
+]
+
+SHOE_SIZE_FEMALE = [
+    ShoeSize(3, 21.6),
+    ShoeSize(3.5, 22.0),
+    ShoeSize(4, 22.4),
+    ShoeSize(4.5, 22.9),
+    ShoeSize(5, 23.3),
+    ShoeSize(5.5, 23.7),
+    ShoeSize(6, 24.1),
+    ShoeSize(6.5, 24.6),
+    ShoeSize(7, 25.0),
+    ShoeSize(7.5, 25.4),
+    ShoeSize(8, 25.8),
+    ShoeSize(8.5, 26.2),
+    ShoeSize(9, 26.7),
+    ShoeSize(9.5, 27.1),
+    ShoeSize(10, 27.5),
+    ShoeSize(10.5, 27.9),
+    ShoeSize(11, 28.4),
+    ShoeSize(11.5, 28.8),
+    ShoeSize(12, 29.2),
+    ShoeSize(12.5, 29.6),
+    ShoeSize(13, 30.1),
+    ShoeSize(13.5, 30.5),
+    ShoeSize(14, 30.9),
+    ShoeSize(14.5, 31.3),
+    ShoeSize(15, 31.8),
+    ShoeSize(15.5, 32.2),
+]
 
 class Point:
     '''
@@ -49,7 +120,6 @@ class FootSizeMeasurer:
             Then, points with minimum distance between each image corner
             are recognized as the 4 corner    
         '''
-
         # Minimum distance of points in the contour
         # Use big number for initialization
         r_min_tl = 1000000
@@ -65,6 +135,7 @@ class FootSizeMeasurer:
 
         # Check all points in the contour
         for point in cnt:
+
             x = point[0][0] # x coordinate of the pixel
             y = point[0][1] # y coordinate of the pixel
 
@@ -105,6 +176,9 @@ class FootSizeMeasurer:
             Param: 
             [image] binary image which contains object of foot
         '''
+
+        success = True
+
         # Define foot width and foot height
         w_foot = 0
         h_foot = 0
@@ -118,6 +192,10 @@ class FootSizeMeasurer:
         # Sort contours from largest to smallest contour area
         contours = sorted(contours, key=cv2.contourArea, reverse=True)
 
+        if len(contours) == 0:
+            success = False
+            return success, None, None
+        
         # Get contour with largest contour area
         cnt = contours[0]
 
@@ -167,15 +245,16 @@ class FootSizeMeasurer:
         w_foot = (x_max - x_min) / self.__pixel_per_mm
         h_foot = (h - y_min) / self.__pixel_per_mm
 
-        return (w_foot, h_foot), (point_left, point_right, point_top)
+        return success, (w_foot, h_foot), (point_left, point_right, point_top)
 
-    def get_foot_size(self, image):
+    def get_foot_size(self, image, gender):
         '''
             Return foot size from raw image
 
             Param:
             [image] RGB image which contains foot object on top of white paper
         '''
+        is_valid = True
 
         # Initialize foot height and foot width
         foot_height = 0
@@ -199,6 +278,11 @@ class FootSizeMeasurer:
         # Sort contours from largest to smallest contour area
         contours = sorted(contours, key=cv2.contourArea, reverse=True)
 
+        # Make sure exactly one contour found
+        if len(contours) != 1:
+            is_valid = False
+            return is_valid, image_result
+        
         # Get contour with largest contour area
         cnt = contours[0]
 
@@ -246,11 +330,32 @@ class FootSizeMeasurer:
         image_result = cv2.warpPerspective(image_result,M,(w_transformed, h_transformed),flags=cv2.INTER_LINEAR)
 
         # Determine foot size and reference points of foot object
-        foot_size, foot_coordinate = self.__determine_foot_size(image_warped)
+        success, foot_size, foot_coordinate = self.__determine_foot_size(image_warped)
+
+        if not success:
+            is_valid = False
+            return is_valid, image_result
 
         # Extract foot size and foot coordinate
         foot_width, foot_height = foot_size
         point_left, point_right, point_top = foot_coordinate
+
+        foot_height_cm = foot_height / 10
+
+        
+        if gender == GENDER_MALE:
+            SHOE_SIZE = SHOE_SIZE_MALE
+        elif gender == GENDER_FEMALE:
+            SHOE_SIZE = SHOE_SIZE_FEMALE
+
+        min_dif = 10000
+        shoe_size_idx = -1
+        for i, shoe_size in enumerate(SHOE_SIZE):
+            dif = shoe_size.get_dif(foot_height_cm)
+            if dif > 0 and dif < min_dif:
+                min_dif = dif
+                shoe_size_idx = i
+
    
         # Append result as text
         image_result = cv2.putText(image_result, 
@@ -263,11 +368,24 @@ class FootSizeMeasurer:
                                     (50, 100), 
                                     cv2.FONT_HERSHEY_SIMPLEX, 
                                     1, (255, 0, 0), 2, cv2.LINE_AA)
+
+        image_result = cv2.putText(image_result, 
+                            f'Size: {SHOE_SIZE[shoe_size_idx].get_us_size()}', 
+                            (50, 150), 
+                            cv2.FONT_HERSHEY_SIMPLEX, 
+                            1, (255, 0, 0), 2, cv2.LINE_AA)
+                
+        gender_text = 'Female' if (gender == GENDER_FEMALE) else 'Male' 
+        image_result = cv2.putText(image_result, 
+                            f'Gender: {gender_text}', 
+                            (50, 200), 
+                            cv2.FONT_HERSHEY_SIMPLEX, 
+                            1, (255, 0, 0), 2, cv2.LINE_AA)
         
         # Mark foot object
         image_result = cv2.line(image_result, point_left.tuple(), (point_right.x, point_left.y), (0,0,255), 3)
-        image_result = cv2.line(image_result, point_top.tuple(), (point_top.x, h), (0,0,255), 3)
+        image_result = cv2.line(image_result, point_top.tuple(), (point_top.x, h_transformed), (0,0,255), 3)
 
-        image_result = cv2.rectangle(image_result, (point_left.x, point_top.y), (point_right.x, h), (0,255,0), 3)
+        image_result = cv2.rectangle(image_result, (point_left.x, point_top.y), (point_right.x, h_transformed), (0,255,0), 3)
 
-        return image_result, foot_height, foot_width
+        return is_valid, image_result
