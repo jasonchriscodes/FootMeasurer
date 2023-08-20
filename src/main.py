@@ -23,8 +23,8 @@ mode = MODE_GENDER_RECOGNITION
 
 # Initialization
 measurer = FootSizeMeasurer(
-    paper_hsv_min = (0, 0, 254), 
-    paper_hsv_max = (180, 24, 255)
+    paper_hsv_min = (0, 0, 200), 
+    paper_hsv_max = (180, 255, 255)
 )
 
 face1 = "assets/models/opencv_face_detector.pbtxt"
@@ -47,8 +47,8 @@ is_loading = False
 
 def read_frame():
     print("[INFO]\tRead frame started.")
-    cap = cv2.VideoCapture("assets/videos/video6.mov")
-    #cap = cv2.VideoCapture(0)
+    #cap = cv2.VideoCapture("assets/videos/video6.mov")
+    cap = cv2.VideoCapture(0)
     while cap.isOpened():
         ret, frame = cap.read()
         if ret:

@@ -260,12 +260,17 @@ class FootSizeMeasurer:
         foot_height = 0
         foot_width = 0
 
-        # Copy raw image
-        image_result = image
-
         # Extract image height and image width
         h, w, _ = image.shape
 
+        # Copy raw image
+        image_result = image.copy()
+
+        margin_v = 100
+        margin_h = 200
+        
+        image_result = cv2.rectangle(image_result, (margin_h,margin_v), (w-margin_h, h-margin_v), (255,0,0), 3)
+        
         # Convert raw image colorspace to HSV
         image_hsv = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
 
@@ -273,10 +278,18 @@ class FootSizeMeasurer:
         image_thresh = cv2.inRange(image_hsv, self.__paper_hsv_min, self.__paper_hsv_max)
         
         # Find contours of the binary image
-        contours, _ = cv2.findContours(image_thresh, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+        contours, _ = cv2.findContours(image_thresh[margin_v:h-margin_v, margin_h :  w - margin_h], cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
 
         # Sort contours from largest to smallest contour area
         contours = sorted(contours, key=cv2.contourArea, reverse=True)
+
+        image_result = cv2.drawContours(image_result, contours, -1, (0,255,0),2)
+
+        image_result = cv2.putText(image_result, 
+                    f'Contour Count: {len(contours)}', 
+                    (50, 50), 
+                    cv2.FONT_HERSHEY_SIMPLEX, 
+                    1, (255, 0, 0), 2, cv2.LINE_AA)
 
         # Make sure exactly one contour found
         if len(contours) != 1:
@@ -286,6 +299,7 @@ class FootSizeMeasurer:
         # Get contour with largest contour area
         cnt = contours[0]
 
+        cnt = cnt + (margin_h, margin_v)
         # Get 4 corner points of the paper object
         point_tl, point_tr, point_bl, point_br = self.__get_corner(
             cnt=cnt,
