@@ -42,19 +42,25 @@ recognizer = GenderRecognizer(
 frame_buffer = queue.Queue()
 display_buffer = queue.Queue()
 
-stop = False
+stop_all = False
+next = False
 is_loading = False
 
 def read_frame():
+    global next, stop_all
     print("[INFO]\tRead frame started.")
-    #cap = cv2.VideoCapture("assets/videos/video6.mov")
     cap = cv2.VideoCapture(0)
     while cap.isOpened():
         ret, frame = cap.read()
         if ret:
             frame_buffer.put(frame)
+            sleep(1/30)
         else:
             break
+
+        if next or stop_all:
+            break
+
     cap.release()
     print("[INFO]\tRead frame finished.")
 
@@ -80,7 +86,7 @@ def measure_foot_size(gender_int):
         if ret:
             image = cv2.rotate(image, cv2.ROTATE_180)
             # Measure foot size
-            is_valid, image_result = measurer.get_foot_size(image, GENDER_FEMALE)
+            is_valid, image_result = measurer.get_foot_size(image, gender_int)
 
             display_buffer.put(image_result)
 
@@ -91,7 +97,7 @@ def measure_foot_size(gender_int):
     print("[INFO]\tMeasure foot size finished.")
 
 def show_progress_bar(frame):
-    global is_loading
+    global is_loading, stop_all
     h, w, _ = frame.shape
 
     cap = cv2.VideoCapture('assets/loading.gif')
@@ -117,38 +123,57 @@ def show_progress_bar(frame):
 
         else:
             cap = cv2.VideoCapture('assets/loading.gif')
+        if stop_all:
+            break
+    
+    cap.release()
 
 def recognize_gender():
-    global stop, is_loading
+    global next, is_loading, stop_all
     print("[INFO]\tRecognize gender started.")
+
+    count = 0
     while True:
         if not frame_buffer.empty():
             frame = frame_buffer.get()
+            #display_buffer.put(frame)
             is_valid, out_frame, gender_int = recognizer.predict(frame)
             display_buffer.put(out_frame)
+
+            count += 1
+            print(f"Frame processed: {count}")
             
-            if is_valid:
+            if is_valid and count > 5:
                 thread = threading.Thread(target = measure_foot_size, args=(gender_int,))
                 thread.start()
-                stop = True
+                next = True
 
-        if stop:
+        if next:
             progress_thread = threading.Thread(target = show_progress_bar, args=(frame,))
             progress_thread.start()
             is_loading = True
             break
+        
+        if stop_all:
+            break
+
     print("[INFO]\tRecognize gender finished.")
 
 def display():
-    global stop, is_loading
+    global stop_all, is_loading
     while True:
         if not display_buffer.empty():
             frame = display_buffer.get()
+
+            h, w, _ = frame.shape 
+
+            ratio = 620 / h
+
+            frame = cv2.resize(frame, (int(w * ratio), int(h * ratio)))
             cv2.imshow("Frame", frame)
 
         if cv2.waitKey(1) & 0xFF == ord('q'):
-            stop = True
-            is_loading = False
+            stop_all = True
             break
 
 read_frame_thread = threading.Thread(target=read_frame)

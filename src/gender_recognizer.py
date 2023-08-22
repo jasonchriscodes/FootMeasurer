@@ -26,7 +26,7 @@ class GenderRecognizer:
         # Face detection
         fr_h = fr_cv.shape[0]
         fr_w = fr_cv.shape[1]
-        blob = cv2.dnn.blobFromImage(fr_cv, 1.0, (300, 300),
+        blob = cv2.dnn.blobFromImage(fr_cv, 1.0, (100, 100),
                                     [104, 117, 123], True, False)
 
         self.__face.setInput(blob)
@@ -38,7 +38,7 @@ class GenderRecognizer:
             #Bounding box creation if confidence > 0.7
             confidence = detections[0, 0, i, 2]
 
-            if confidence > 0.9:
+            if confidence > 0.3:
                 
                 x1 = int(detections[0, 0, i, 3]*fr_w)
                 y1 = int(detections[0, 0, i, 4]*fr_h)
@@ -49,7 +49,7 @@ class GenderRecognizer:
                 
                 cv2.rectangle(fr_cv, (x1, y1), (x2, y2),
                             (0, 255, 0), int(round(fr_h/150)), 2)
-    
+
         if len(faceBoxes) != 1:
             is_valid = False
             return is_valid, fr_cv, gender_int
