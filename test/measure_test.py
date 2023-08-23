@@ -1,5 +1,7 @@
 import sys
-sys.path.insert(0,"/home/pi/ENSE810/Project/src")
+from os.path import dirname,abspath,join
+projectdir = dirname(dirname(abspath(__file__)))
+sys.path.insert(1,join(projectdir, "src"))
 
 import unittest
 from measure import Point, FootSizeMeasurer
