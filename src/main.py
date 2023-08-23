@@ -143,7 +143,7 @@ def recognize_gender():
             count += 1
             print(f"Frame processed: {count}")
             
-            if is_valid and count > 5:
+            if is_valid and count > 10:
                 thread = threading.Thread(target = measure_foot_size, args=(gender_int,))
                 thread.start()
                 next = True
