@@ -1,5 +1,6 @@
 import cv2
 from constant import *
+from error import EmptyImageError
 
 MODEL_MEAN_VALUES = (78.4263377603, 87.7689143744, 114.895847746)
 
@@ -17,6 +18,9 @@ class GenderRecognizer:
         self.__label_gender = ['Male', 'Female']
     
     def predict(self, image):
+        if image == None:
+            raise EmptyImageError()
+
         is_valid = True
         gender_int = GENDER_MALE
 

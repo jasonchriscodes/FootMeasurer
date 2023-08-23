@@ -4,6 +4,7 @@ import cv2
 from math import sqrt
 from threading import Thread
 from constant import *
+from error import EmptyImageError
 class ShoeSize:
     def __init__(self, us: float, cm_height: float):
         self.__us = us
@@ -247,7 +248,7 @@ class FootSizeMeasurer:
 
         return success, (w_foot, h_foot), (point_left, point_right, point_top)
 
-    def get_foot_size(self, image, gender):
+    def get_foot_size(self, image, gender: int):
         '''
             Return foot size from raw image
 
@@ -259,6 +260,9 @@ class FootSizeMeasurer:
         # Initialize foot height and foot width
         foot_height = 0
         foot_width = 0
+
+        if image == None:
+            raise EmptyImageError()
 
         # Extract image height and image width
         h, w, _ = image.shape

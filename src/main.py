@@ -184,39 +184,3 @@ recognize_gender_thread.start()
 servo.value = -0.8
 display()
 
-# cap = cv2.VideoCapture("assets/videos/video6.mov")
-# while cap.isOpened():
-#     start_time = time_ns()
-
-#     ret, frame = cap.read()
-#     if ret:
-
-#         if mode == MODE_GENDER_RECOGNITION:
-#             is_valid, frame, gender_int = recognizer.predict(frame)
-#             #if is_valid:
-#                 #mode = MODE_IDLE
-#                 # TODO: Move camera down
-#                 # TODO: When camera has already at desired position, change current mode to foot measurement
-#             #    pass
-#             cv2.imshow("Frame", frame)
-
-#         elif mode == MODE_FOOT_MEAUSUREMENT:
-#             # TODO: Capture image
-#             # TODO: Measure foot size
-#             pass
-#         elif mode == MODE_IDLE:
-#             cv2.imshow("Frame", frame)
-#     else:
-#         break
-
-#     if cv2.waitKey(1) & 0xFF == ord('q'):
-#         break
-
-#     end_time = time_ns()
-
-#     execution_time_ms = (end_time - start_time) / 1000000
-#     print(f"Execution Time: {execution_time_ms} ms")
-
-# cap.release()
-# cv2.destroyAllWindows()
-
